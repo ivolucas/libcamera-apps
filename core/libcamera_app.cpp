@@ -527,9 +527,9 @@ void LibcameraApp::StartCamera()
 	if (!controls_.get(controls::Sharpness))
 		controls_.set(controls::Sharpness, options_->sharpness);
 
-	if (!controls_.contains(libcamera::controls::AfTrigger) && options_->autofocus && !options_->continue_autofocus)
+	if (!controls_.get(libcamera::controls::AfTrigger) && options_->autofocus && !options_->continue_autofocus)
 		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
-	if (!controls_.contains(libcamera::controls::AfTrigger) && options_->continue_autofocus)
+	if (!controls_.get(libcamera::controls::AfTrigger) && options_->continue_autofocus)
 		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerCancel);
 
 
@@ -723,7 +723,7 @@ StreamInfo LibcameraApp::GetStreamInfo(Stream const *stream) const
 }
 
 void LibcameraApp::SetScalerCrop(float roi_x, float roi_y, float roi_width, float roi_height) {
-	if (!controls_.contains(controls::ScalerCrop))
+	if (!controls_.get(controls::ScalerCrop))
 	{
 		Rectangle sensor_area = camera_->properties().get(properties::ScalerCropMaximum);
 		int x = roi_x * sensor_area.width;
