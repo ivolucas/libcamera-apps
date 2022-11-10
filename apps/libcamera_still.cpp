@@ -226,7 +226,7 @@ static void event_loop(LibcameraStillApp &app)
 
 		auto now = std::chrono::high_resolution_clock::now();
 		int key = get_key_or_signal(options, p);
-		+		if (!key)
+		if (!key)
 			key = param[0];
 
 		switch (key)
