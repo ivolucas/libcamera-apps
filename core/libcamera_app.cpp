@@ -725,7 +725,7 @@ StreamInfo LibcameraApp::GetStreamInfo(Stream const *stream) const
 void LibcameraApp::SetScalerCrop(float roi_x, float roi_y, float roi_width, float roi_height) {
 	if (!controls_.get(controls::ScalerCrop))
 	{
-		Rectangle sensor_area = camera_->properties().get(properties::ScalerCropMaximum);
+		Rectangle sensor_area = *camera_->properties().get(properties::ScalerCropMaximum);
 		int x = roi_x * sensor_area.width;
 		int y = roi_y * sensor_area.height;
 		int w = roi_width * sensor_area.width;
