@@ -344,6 +344,8 @@ void LibcameraApp::ConfigureStill(unsigned int flags)
 	{
 		configuration_->at(1).size = options_->mode.Size();
 		configuration_->at(1).pixelFormat = mode_to_pixel_format(options_->mode);
+	} else if (!options_->rawfull){
+		configuration_->at(1).size = configuration_->at(0).size;
 	}
 	configuration_->at(1).bufferCount = configuration_->at(0).bufferCount;
 
@@ -524,6 +526,12 @@ void LibcameraApp::StartCamera()
 		controls_.set(controls::Saturation, options_->saturation);
 	if (!controls_.get(controls::Sharpness))
 		controls_.set(controls::Sharpness, options_->sharpness);
+
+	if (!controls_.contains(libcamera::controls::AfTrigger) && options_->autofocus && !options_->continue_autofocus)
+		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
+	if (!controls_.contains(libcamera::controls::AfTrigger) && options_->continue_autofocus)
+		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerCancel);
+
 
 	if (camera_->start(&controls_))
 		throw std::runtime_error("failed to start camera");
@@ -712,6 +720,22 @@ StreamInfo LibcameraApp::GetStreamInfo(Stream const *stream) const
 	info.pixel_format = stream->configuration().pixelFormat;
 	info.colour_space = stream->configuration().colorSpace;
 	return info;
+}
+
+void LibcameraApp::SetScalerCrop(float roi_x, float roi_y, float roi_width, float roi_height) {
+	if (!controls_.contains(controls::ScalerCrop))
+	{
+		Rectangle sensor_area = camera_->properties().get(properties::ScalerCropMaximum);
+		int x = roi_x * sensor_area.width;
+		int y = roi_y * sensor_area.height;
+		int w = roi_width * sensor_area.width;
+		int h = roi_height * sensor_area.height;
+		Rectangle crop(x, y, w, h);
+		crop.translateBy(sensor_area.topLeft());
+		if (options_->verbose)
+			std::cout << "Using crop " << crop.toString() << std::endl;
+		controls_.set(controls::ScalerCrop, crop);
+	}
 }
 
 void LibcameraApp::setupCapture()

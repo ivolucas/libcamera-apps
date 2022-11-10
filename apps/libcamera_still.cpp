@@ -18,6 +18,8 @@
 #include "output/output.hpp"
 
 #include "image/image.hpp"
+#include "../SignalServer/SignalServer.hpp"
+ 
 
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -161,9 +163,15 @@ static int get_key_or_signal(StillOptions const *options, pollfd p[1])
 static void event_loop(LibcameraStillApp &app)
 {
 	StillOptions const *options = app.GetOptions();
+	SignalServer signal_server(options->signal_server_port);
+	std::string param;
+	signal_server.start();
 	bool output = !options->output.empty() || options->datetime || options->timestamp; // output requested?
 	bool keypress = options->keypress || options->signal; // "signal" mode is much like "keypress" mode
 	unsigned int still_flags = LibcameraApp::FLAG_STILL_NONE;
+	float scale = 0.0;
+	float offset_x = 0.0;
+	float offset_y = 0.0;
 	if (options->encoding == "rgb" || options->encoding == "png")
 		still_flags |= LibcameraApp::FLAG_STILL_BGR;
 	else if (options->encoding == "bmp")
@@ -201,6 +209,8 @@ static void event_loop(LibcameraStillApp &app)
 
 	for (unsigned int count = 0; ; count++)
 	{
+		param = signal_server.read();
+
 		LibcameraApp::Msg msg = app.Wait();
 		if (msg.type == LibcameraApp::MsgType::Timeout)
 		{
@@ -216,8 +226,155 @@ static void event_loop(LibcameraStillApp &app)
 
 		auto now = std::chrono::high_resolution_clock::now();
 		int key = get_key_or_signal(options, p);
-		if (key == 'x' || key == 'X')
-			return;
+		+		if (!key)
+			key = param[0];
+
+		switch (key)
+		{
+		case 'x':
+		case 'X':
+ 			return;
+		case 'f':
+		case 'F':
+		{
+			libcamera::ControlList controls;
+			controls.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
+			app.SetControls(controls);
+			break;
+		}
+		case 'w':
+		case 'W':
+		{
+			scale += 0.05;
+			break;
+		}
+		case 's':
+		case 'S':
+		{
+			scale -= 0.05;
+			break;
+		}
+		case 'l':
+		case 'L':
+		{
+			offset_x += 0.05;
+			break;
+		}
+		case 'j':
+		case 'J':
+		{
+			offset_x -= 0.05;
+			break;
+		}
+		case 'i':
+		case 'I':
+		{
+			offset_y -= 0.05;
+			break;
+		}
+		case 'k':
+		case 'K':
+		{
+			offset_y += 0.05;
+			break;
+		}
+		case 'm':
+		case 'M':
+		{
+			scale = 0.95;
+			break;
+		}
+		case 'r':
+		case 'R':
+		{
+			scale = 0.0;
+			break;
+		}
+		default:
+			(void)0;
+		}
+
+		if (scale > 0.95)
+			scale = 0.95;
+		else if (scale < 0.0)
+			scale = 0.0;
+
+		if (offset_x > scale / 2)
+			offset_x = scale / 2;
+		else if (offset_x < -(scale / 2))
+			offset_x = -(scale / 2);
+
+		if (offset_y > scale / 2)
+			offset_y = scale / 2;
+		else if (offset_y < -(scale / 2))
+			offset_y = -(scale / 2);
+
+		if (isalpha(key))
+		{
+			std::cout << "scale: " << scale << ", offset_x: " << offset_x << std::endl;
+
+			app.SetScalerCrop(scale / 2 + offset_x, scale / 2 + offset_y, 1 - scale, 1 - scale);
+		}
+
+		if (key == 'w' || key == 'W') {
+			scale += 0.05;
+		}
+
+		if (key == 's' || key == 'S') {
+			scale -= 0.05;
+		}
+
+		if (key == 'l' || key == 'L') {
+			offset_x += 0.05;
+		}
+
+		if (key == 'j' || key == 'J') {
+			offset_x -= 0.05;
+		}
+
+
+		if (key == 'i' || key == 'I') {
+			offset_y -= 0.05;
+		}
+
+		if (key == 'k' || key == 'K') {
+			offset_y += 0.05;
+		}
+
+		if (key == 'm' || key == 'M') {
+			scale = 0.95;
+		}
+
+		if (key == 'r' || key == 'R') {
+			scale = 0.0;
+		}
+
+
+		if (scale > 0.95) {
+			scale = 0.95;
+		}
+
+		if (scale < 0.0) {
+			scale = 0.0;
+		}
+
+		if (offset_x > scale / 2)
+			offset_x = scale / 2;
+
+		if (offset_x < -(scale / 2))
+			offset_x = -(scale / 2);
+
+		if (offset_y > scale / 2)
+			offset_y = scale / 2;
+
+		if (offset_y < -(scale / 2))
+			offset_y = -(scale / 2);
+
+		if (isalpha(key)) {
+			std::cout << "scale: " << scale << ", offset_x: " << offset_x << std::endl;
+
+			app.SetScalerCrop(scale / 2 + offset_x, scale / 2 + offset_y, 1 - scale, 1 - scale);
+		}
 
 		// In viewfinder mode, simply run until the timeout. When that happens, switch to
 		// capture mode if an output was requested.

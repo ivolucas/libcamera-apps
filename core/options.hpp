@@ -133,6 +133,8 @@ struct Options
 			 "Camera mode as W:H:bit-depth:packing, where packing is P (packed) or U (unpacked)")
 			("viewfinder-mode", value<std::string>(&viewfinder_mode_string),
 			 "Camera mode for preview as W:H:bit-depth:packing, where packing is P (packed) or U (unpacked)")
+			("autofocus", value<bool>(&autofocus)->default_value(false)->implicit_value(true), "Trigger Autofocus once.")
+			("continue-autofocus", value<bool>(&continue_autofocus)->default_value(false)->implicit_value(true), "Enable continue autofocus.")
 			("metadata", value<std::string>(&metadata),
 			 "Save captured image metadata to a file or \"-\" for stdout")
 			("metadata-format", value<std::string>(&metadata_format)->default_value("json"),
@@ -193,6 +195,8 @@ struct Options
 	Mode mode;
 	std::string viewfinder_mode_string;
 	Mode viewfinder_mode;
+	bool autofocus;
+	bool continue_autofocus;
 	std::string metadata;
 	std::string metadata_format;
 

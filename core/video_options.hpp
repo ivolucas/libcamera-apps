@@ -58,6 +58,8 @@ struct VideoOptions : public Options
 			 "Write output to a circular buffer of the given size (in MB) which is saved on exit")
 			("frames", value<unsigned int>(&frames)->default_value(0),
 			 "Run for the exact number of frames specified. This will override any timeout set.")
+			 ("signal-server-port", value<unsigned int>(&signal_server_port)->default_value(2262),
+			 "Port for the signal server socket")
 #if LIBAV_PRESENT
 			("libav-format", value<std::string>(&libav_format)->default_value(""),
 			 "Sets the libav encoder output format to use. "
@@ -113,6 +115,7 @@ struct VideoOptions : public Options
 	uint32_t segment;
 	size_t circular;
 	uint32_t frames;
+	uint32_t signal_server_port;
 
 	virtual bool Parse(int argc, char *argv[]) override
 	{

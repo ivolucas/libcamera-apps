@@ -46,6 +46,8 @@ struct StillOptions : public Options
 			 "Create a symbolic link with this name to most recent saved file")
 			("immediate", value<bool>(&immediate)->default_value(false)->implicit_value(true),
 			 "Perform first capture immediately, with no preview phase")
+			("signal-server-port", value<unsigned int>(&signal_server_port)->default_value(2262),
+			 "Port for the signal server socket")
 			;
 		// clang-format on
 	}
@@ -65,6 +67,7 @@ struct StillOptions : public Options
 	bool raw;
 	std::string latest;
 	bool immediate;
+	uint32_t signal_server_port;
 
 	virtual bool Parse(int argc, char *argv[]) override
 	{
