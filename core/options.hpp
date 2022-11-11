@@ -135,7 +135,15 @@ struct Options
 			 "Camera mode for preview as W:H:bit-depth:packing, where packing is P (packed) or U (unpacked)")
 			("autofocus", value<bool>(&autofocus)->default_value(false)->implicit_value(true), "Trigger Autofocus once.")
 			("continue-autofocus", value<bool>(&continue_autofocus)->default_value(false)->implicit_value(true), "Enable continue autofocus.")
-			("buffer-count", value<unsigned int>(&bufferCount)->default_value(0), "override bufferCount config (0 use imlp default)")
+			("buffer-count", value<unsigned int>(&buffer_count)->default_value(0), "override bufferCount config (0 use imlp default)")
+			("autofocus-range", value<std::string>(&afRange)->default_value("normal"),
+			 "Set the range of focus distances that is scanned.(normal, macro, full)")
+			("autofocus-speed", value<std::string>(&afSpeed)->default_value("normal"),
+			 "Control that determines whether the AF algorithm is to move the lens as quickly as possible or more steadily.")
+			("autofocus-window", value<std::string>(&afWindow)->default_value("0,0,0,0"), 
+			"Sets AfMetering to  AfMeteringWindows an set region used for examle  e.g. 0.25,0.25,0.5,0.5")
+			("lens-position", value<float>(&lens_position)->default_value(0),
+			 "Acts as a control to instruct the lens to move to a particular position and also reports back the position of the lens for each frame. (0 moves the lens to infinity;0.5 moves the lens to twice the hyperfocal distance;1 moves the lens to the hyperfocal position )")
 			("metadata", value<std::string>(&metadata),
 			 "Save captured image metadata to a file or \"-\" for stdout")
 			("metadata-format", value<std::string>(&metadata_format)->default_value("json"),
@@ -182,6 +190,7 @@ struct Options
 	float contrast;
 	float saturation;
 	float sharpness;
+	float lens_position;
 	std::optional<float> framerate;
 	std::string denoise;
 	std::string info_text;
@@ -199,8 +208,15 @@ struct Options
 	bool autofocus;
 	bool continue_autofocus;
 	unsigned int buffer_count;
+	std::string afRange;
+	int afRange_index;
+	std::string afSpeed;
+	int afSpeed_index;
+	std::string afWindow;
+	float afWindow_x, afWindow_y, afWindow_width, afWindow_height;
 	std::string metadata;
 	std::string metadata_format;
+	
 
 	virtual bool Parse(int argc, char *argv[]);
 	virtual void Print() const;

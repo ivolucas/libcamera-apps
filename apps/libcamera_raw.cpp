@@ -60,6 +60,8 @@ static void event_loop(LibcameraRaw &app)
 
 		LOG(2, "Viewfinder frame " << count);
 		auto now = std::chrono::high_resolution_clock::now();
+		app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), app.RawStream());
+		
 		if (options->timeout && now - start_time > std::chrono::milliseconds(options->timeout))
 		{
 			app.StopCamera();
@@ -67,7 +69,7 @@ static void event_loop(LibcameraRaw &app)
 			return;
 		}
 
-		app.EncodeBuffer(std::get<CompletedRequestPtr>(msg.payload), app.RawStream());
+		
 	}
 }
 

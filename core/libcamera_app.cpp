@@ -55,7 +55,9 @@ static libcamera::PixelFormat mode_to_pixel_format(Mode const &mode)
 		{ Mode(0, 0, 12, true), libcamera::formats::SBGGR12_CSI2P },
 	};
 
-	auto it = std::find_if(table.begin(), table.end(), [&mode] (auto &m) { return mode.bit_depth == m.first.bit_depth && mode.packed == m.first.packed; });
+	auto it = std::find_if(table.begin(), table.end(),
+						   [&mode](auto &m)
+						   { return mode.bit_depth == m.first.bit_depth && mode.packed == m.first.packed; });
 	if (it != table.end())
 		return it->second;
 
@@ -125,8 +127,8 @@ void LibcameraApp::OpenCamera()
 	if (!options_->post_process_file.empty())
 		post_processor_.Read(options_->post_process_file);
 	// The queue takes over ownership from the post-processor.
-	post_processor_.SetCallback(
-		[this](CompletedRequestPtr &r) { this->msg_queue_.Post(Msg(MsgType::RequestComplete, std::move(r))); });
+	post_processor_.SetCallback([this](CompletedRequestPtr &r)
+								{ this->msg_queue_.Post(Msg(MsgType::RequestComplete, std::move(r))); });
 
 	if (options_->framerate)
 	{
@@ -344,7 +346,9 @@ void LibcameraApp::ConfigureStill(unsigned int flags)
 	{
 		configuration_->at(1).size = options_->mode.Size();
 		configuration_->at(1).pixelFormat = mode_to_pixel_format(options_->mode);
-	} else if (!options_->rawfull){
+	}
+	else if (!options_->rawfull)
+	{
 		configuration_->at(1).size = configuration_->at(0).size;
 	}
 	configuration_->at(1).bufferCount = configuration_->at(0).bufferCount;
@@ -383,8 +387,9 @@ void LibcameraApp::ConfigureVideo(unsigned int flags)
 	// Now we get to override any of the default settings from the options_->
 	StreamConfiguration &cfg = configuration_->at(0);
 	cfg.pixelFormat = libcamera::formats::YUV420;
-	if (options_->bufferCount>0){
-		cfg.bufferCount = options_->bufferCount;
+	if (options_->buffer_count > 0)
+	{
+		cfg.bufferCount = options_->buffer_count;
 	}
 	if (options_->width)
 		cfg.size.width = options_->width;
@@ -489,6 +494,21 @@ void LibcameraApp::StartCamera()
 		controls_.set(controls::ScalerCrop, crop);
 	}
 
+
+	if (!controls_.get(controls::AfWindows) && options_->afWindow_width != 0 && options_->afWindow_height != 0)
+	{
+		Rectangle sensor_area = *camera_->properties().get(properties::ScalerCropMaximum);
+		int x = options_->afWindow_x * sensor_area.width;
+		int y = options_->afWindow_y * sensor_area.height;
+		int w = options_->afWindow_width * sensor_area.width;
+		int h = options_->afWindow_height * sensor_area.height;
+		Rectangle afwindows_rectangle[1];
+		afwindows_rectangle[0]= Rectangle(x, y, w, h);
+		afwindows_rectangle[0].translateBy(sensor_area.topLeft());
+		LOG(2, "Using AfWindow " << afwindows_rectangle[0].toString());
+		controls_.set(controls::AfWindows, afwindows_rectangle);
+	}
+
 	// Framerate is a bit weird. If it was set programmatically, we go with that, but
 	// otherwise it applies only to preview/video modes. For stills capture we set it
 	// as long as possible so that we get whatever the exposure profile wants.
@@ -500,8 +520,7 @@ void LibcameraApp::StartCamera()
 		else if (!options_->framerate || options_->framerate.value() > 0)
 		{
 			int64_t frame_time = 1000000 / options_->framerate.value_or(DEFAULT_FRAMERATE); // in us
-			controls_.set(controls::FrameDurationLimits,
-						  libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
+			controls_.set(controls::FrameDurationLimits, libcamera::Span<const int64_t, 2>({ frame_time, frame_time }));
 		}
 	}
 
@@ -529,11 +548,23 @@ void LibcameraApp::StartCamera()
 	if (!controls_.get(controls::Sharpness))
 		controls_.set(controls::Sharpness, options_->sharpness);
 
-	if (!controls_.get(libcamera::controls::AfTrigger) && options_->autofocus && !options_->continue_autofocus)
-		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
-	if (!controls_.get(libcamera::controls::AfTrigger) && options_->continue_autofocus)
-		controls_.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerCancel);
+	if (!controls_.get(libcamera::controls::AfMode))
+	{
+		if (options_->autofocus)
+			controls_.set(libcamera::controls::AfMode, libcamera::controls::AfModeAuto);
+		else if(options_->continue_autofocus)
+			controls_.set(libcamera::controls::AfMode, libcamera::controls::AfModeContinuous);
+		else
+			controls_.set(libcamera::controls::AfMode, libcamera::controls::AfModeManual);
+	}
 
+	if (!controls_.get(controls::AfRange))
+		controls_.set(controls::AfRange, options_->afRange_index);
+	if (!controls_.get(controls::AfSpeed))
+		controls_.set(controls::AfSpeed, options_->afSpeed_index);
+
+	if (!controls_.get(controls::LensPosition))
+		controls_.set(controls::LensPosition, options_->lens_position);
 
 	if (camera_->start(&controls_))
 		throw std::runtime_error("failed to start camera");
@@ -724,7 +755,8 @@ StreamInfo LibcameraApp::GetStreamInfo(Stream const *stream) const
 	return info;
 }
 
-void LibcameraApp::SetScalerCrop(float roi_x, float roi_y, float roi_width, float roi_height) {
+void LibcameraApp::SetScalerCrop(float roi_x, float roi_y, float roi_width, float roi_height)
+{
 	if (!controls_.get(controls::ScalerCrop))
 	{
 		Rectangle sensor_area = *camera_->properties().get(properties::ScalerCropMaximum);
