@@ -111,7 +111,7 @@ static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, Strea
 		throw std::runtime_error("failed to open file " + filename);
 	try{
 		LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride="<< info.stride << "\tpixel_format="<< info.pixel_format <<"\tsize="<< mem[0].size());
-		fprintf(fp, "{ \"width\":%i, \"height\":%i, \"stride\":%i, \"pixel_format\":\"%s\", \"bufer_size\":%i }\n", info.width, info.height, info.stride,info.pixel_format.toString().c_str(), mem[0].size());
+		fprintf(fp, "{ \"width\":%d, \"height\":%d, \"stride\":%d, \"pixel_format\":\"%s\", \"bufer_size\":%d }\n", info.width, info.height, info.stride,info.pixel_format.toString().c_str(), (int)mem[0].size());
 		fflush(fp);
 		if (fwrite(mem[0].data(), mem[0].size(), 1, fp) != 1)
 			throw std::runtime_error("failed to write output bytes");
