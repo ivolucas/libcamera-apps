@@ -74,6 +74,58 @@ static int get_key_or_signal(StillOptions const *options, pollfd p[1])
 	return key;
 }
 
+
+static std::string generate_filename(SerializeOptions const *options)
+{
+	if(options->output == "-")
+		return options->output;
+	char filename[128];
+	std::string folder = options->output; // sometimes "output" is used as a folder name
+	if (!folder.empty() && folder.back() != '/')
+		folder += "/";
+	if (options->datetime)
+	{
+		std::time_t raw_time;
+		std::time(&raw_time);
+		char time_string[32];
+		std::tm *time_info = std::localtime(&raw_time);
+		std::strftime(time_string, sizeof(time_string), "%m%d%H%M%S", time_info);
+		snprintf(filename, sizeof(filename), "%s%s.%s", folder.c_str(), time_string, options->encoding.c_str());
+	}
+	else if (options->timestamp)
+		snprintf(filename, sizeof(filename), "%s%u.%s", folder.c_str(), (unsigned)time(NULL),
+				 options->encoding.c_str());
+	else
+		snprintf(filename, sizeof(filename), options->output.c_str(), options->framestart);
+	filename[sizeof(filename) - 1] = 0;
+	return std::string(filename);
+}
+
+
+static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info, std::string const &filename)
+{
+	if (mem.size() != 1)
+		throw std::runtime_error("incorrect number of planes in YUV420 data");
+	FILE *fp = filename == "-" ? stdout : fopen(filename.c_str(), "w");
+	if (!fp)
+		throw std::runtime_error("failed to open file " + filename);
+	try{
+		LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride="<< info.stride << "\tpixel_format="<< info.pixel_format <<"\tsize="<< mem[0].size());
+		fprintf(fp, "{ \"width\":%i, \"height\":%i, \"stride\":%i, \"pixel_format\":\"%s\", \"bufer_size\":%i }\n", info.width, info.height, info.stride,info.pixel_format.toString().c_str(), mem[0].size());
+		fflush(fp);
+		if (fwrite(mem[0].data(), mem[0].size(), 1, fp) != 1)
+			throw std::runtime_error("failed to write output bytes");
+		fflush(fp);
+	}
+	catch (std::exception const &e)
+	{
+		if (fp != stdout)
+			fclose(fp);
+		throw;
+	}
+
+}
+
 // The main even loop for the application.
 
 static void event_loop(LibcameraSerializeApp &app)
@@ -115,10 +167,7 @@ static void event_loop(LibcameraSerializeApp &app)
 			StreamInfo info;
 			libcamera::Stream *stream = app.ViewfinderStream(&info);
 			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-			fprintf(stdout, "%i,%i,%i\n", info.width, info.height, info.stride);
-			fflush(stdout);
-			LOG(2, "Save full image width=" << info.width << "height=" << info.height << "stride="<< info.stride);
-			yuv_save(mem, info, std::string("/dev/null"), options);
+			write_buffer(mem, info,generate_filename(options));
 		}
 		// In still capture mode, save a jpeg and go back to preview.
 		else if (app.VideoStream())
@@ -126,11 +175,7 @@ static void event_loop(LibcameraSerializeApp &app)
 			StreamInfo info;
 			libcamera::Stream *stream = app.VideoStream(&info);
 			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-
-			fprintf(stdout, "%i,%i,%i\n", info.width, info.height, info.stride);
-			fflush(stdout);
-			LOG(2, "Save full image width=" << info.width << "height=" << info.height << "stride="<< info.stride);
-			yuv_save(mem, info, std::string("/dev/null"), options);
+			write_buffer(mem, info,generate_filename(options));
 
 		}
 
