@@ -133,8 +133,8 @@ struct Options
 			 "Camera mode as W:H:bit-depth:packing, where packing is P (packed) or U (unpacked)")
 			("viewfinder-mode", value<std::string>(&viewfinder_mode_string),
 			 "Camera mode for preview as W:H:bit-depth:packing, where packing is P (packed) or U (unpacked)")
-			("buffer-count", value<unsigned int>(&buffer_count)->default_value(0), "overwrite bufferCount config from libcamera for video; raw and still (0 to use default provided by the libcamera implementation)")
-			("viewfinder-buffer-count", value<unsigned int>(&viewfinder_buffer_count)->default_value(0), "overwrite bufferCount config from libcamera  for the preview (0 to use default provided by the libcamera implementation)")
+			("buffer-count", value<unsigned int>(&buffer_count)->default_value(0), "Number of in-flight requests (and buffers) configured for video, raw, and still.")
+			("viewfinder-buffer-count", value<unsigned int>(&viewfinder_buffer_count)->default_value(0), "Number of in-flight requests (and buffers) configured for preview window.")
 			("autofocus-mode", value<std::string>(&afMode)->default_value("unset"),
 			 "Control to set the mode of the AF (autofocus) algorithm.(manual, auto, continuous)")
 			("autofocus-range", value<std::string>(&afRange)->default_value("unset"),
