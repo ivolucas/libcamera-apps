@@ -12,7 +12,7 @@
 #include <signal.h>
 #include <sys/signalfd.h>
 #include <sys/stat.h>
-
+#include "core/frame_info.hpp"
 #include "core/libcamera_app.hpp"
 #include "core/still_options.hpp"
 
@@ -102,7 +102,8 @@ static std::string generate_filename(SerializeOptions const *options)
 }
 
 
-static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info, std::string const &filename)
+
+static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,FrameInfo const &frameInfo, std::string const &filename)
 {
 	if (mem.size() != 1)
 		throw std::runtime_error("incorrect number of planes in YUV420 data");
@@ -110,8 +111,14 @@ static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, Strea
 	if (!fp)
 		throw std::runtime_error("failed to open file " + filename);
 	try{
-		LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride="<< info.stride << "\tpixel_format="<< info.pixel_format <<"\tsize="<< mem[0].size());
-		fprintf(fp, "{ \"width\":%d, \"height\":%d, \"stride\":%d, \"pixel_format\":\"%s\", \"bufer_size\":%d }\n", info.width, info.height, info.stride,info.pixel_format.toString().c_str(), (int)mem[0].size());
+		if(frameInfo.focus>0)
+		LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride="<< info.stride << "\tpixel_format="<< info.pixel_format <<"\tsize="<< mem[0].size() << "\tframeInfo.focus=" << frameInfo.focus);
+		fprintf(fp, 
+			"{ \"width\":%d, \"height\":%d, \"stride\":%d, \"pixel_format\":\"%s\", \"buffer_size\":%d",
+			 info.width, info.height, info.stride,info.pixel_format.toString().c_str(), (int)mem[0].size());
+		fprintf(fp, ", \"frame_info\":{\"frame\":%d, \"fps\":%.2f, \"exposure_time\":%.2f, \"analogue_gain\":%.2f, \"digital_gain\":%.2f, \"red_colour_gain\":%.2f, \"blue_colour_gain\":%.2f, \"focus\":%.2f, \"aelock\":%s }",
+			frameInfo.sequence,frameInfo.fps,frameInfo.exposure_time,frameInfo.analogue_gain,frameInfo.digital_gain,frameInfo.colour_gains[0],frameInfo.colour_gains[1],frameInfo.focus, frameInfo.aelock ? "true" : "false");
+		fprintf(fp, "}\n");
 		fflush(fp);
 		if (fwrite(mem[0].data(), mem[0].size(), 1, fp) != 1)
 			throw std::runtime_error("failed to write output bytes");
@@ -141,7 +148,7 @@ static void event_loop(LibcameraSerializeApp &app)
 	app.ConfigureViewfinder();
 	app.StartCamera();
 	auto start_time = std::chrono::high_resolution_clock::now();
-
+	int lens_position = 400;
 	for (unsigned int count = 0;; count++)
 	{
 		LibcameraApp::Msg msg = app.Wait();
@@ -158,6 +165,10 @@ static void event_loop(LibcameraSerializeApp &app)
 		// In viewfinder mode, simply run until the timeout, but do a capture if the object
 		// we're looking for is detected.
 		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
+
+		FrameInfo frame_info(completed_request->metadata);
+		frame_info.fps = completed_request->framerate;
+		frame_info.sequence = completed_request->sequence;
 		if (app.ViewfinderStream())
 		{
 			auto now = std::chrono::high_resolution_clock::now();
@@ -167,7 +178,8 @@ static void event_loop(LibcameraSerializeApp &app)
 			StreamInfo info;
 			libcamera::Stream *stream = app.ViewfinderStream(&info);
 			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-			write_buffer(mem, info,generate_filename(options));
+			write_buffer(mem, info, frame_info, generate_filename(options));
+			app.ShowPreview(completed_request, stream);
 		}
 		// In still capture mode, save a jpeg and go back to preview.
 		else if (app.VideoStream())
@@ -175,8 +187,8 @@ static void event_loop(LibcameraSerializeApp &app)
 			StreamInfo info;
 			libcamera::Stream *stream = app.VideoStream(&info);
 			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-			write_buffer(mem, info,generate_filename(options));
-
+			write_buffer(mem, info, frame_info, generate_filename(options));
+			
 		}
 
 		int key = get_key_or_signal(options, p);
@@ -185,18 +197,73 @@ static void event_loop(LibcameraSerializeApp &app)
 		{
 		case 'x':
 		case 'X':
-			LOG(2, "Exiting");
+			LOG(1, "Exiting");
 			return;
 		case 'f':
 		case 'F':
 		{
-			LOG(2, "Focus");
+			LOG(1, "Focus Trigger");
 			libcamera::ControlList controls;
 			controls.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
 			app.SetControls(controls);
 
 			break;
 		}
+		case 'M':
+		case 'm':
+		{
+			LOG(1, "Manul Focus");
+			libcamera::ControlList controls;
+			controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeManual);
+			app.SetControls(controls);
+			break;
+		}
+		case 'A':
+		case 'a':
+		{
+			LOG(1, "Auto Focus");
+			libcamera::ControlList controls;
+			controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeAuto);
+			controls.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
+			app.SetControls(controls);
+			break;
+		}
+		case 'C':
+		case 'c':
+		{
+			LOG(1, "Continuous Auto Focus");
+			libcamera::ControlList controls;
+			controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeContinuous);
+			controls.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
+			app.SetControls(controls);
+			break;
+		}
+
+		case '+':
+		{
+			libcamera::ControlList controls;
+			lens_position +=20;
+			if(lens_position>1024)
+				lens_position= 1024; 
+			LOG(2, "+ LensPosition :"<< lens_position);
+			controls.set(libcamera::controls::LensPosition, lens_position);
+			app.SetControls(controls);
+			break;
+		}
+		case '-':
+		{
+			libcamera::ControlList controls;
+			lens_position -=20;
+			if(lens_position<0)
+				lens_position= 0; 
+			LOG(1, "- LensPosition :"<< lens_position);
+			controls.set(libcamera::controls::LensPosition, lens_position);
+			app.SetControls(controls);
+			break;
+		}
+
+
+
 		case '1':
 		{
 			LOG(1, "Change for ConfigureViewfinder");
