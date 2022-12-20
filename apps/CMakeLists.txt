@@ -20,7 +20,11 @@ project(libcamera-jpeg)
 add_executable(libcamera-jpeg libcamera_jpeg.cpp)
 target_link_libraries(libcamera-jpeg libcamera_app images)
 
-set(EXECUTABLES libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg)
+project(libcamera-serialize)
+add_executable(libcamera-serialize libcamera_serialize.cpp)
+target_link_libraries(libcamera-serialize libcamera_app images)
+
+set(EXECUTABLES libcamera-still libcamera-vid libcamera-hello libcamera-raw libcamera-jpeg libcamera-serialize)
 
 if (ENABLE_TFLITE)
     project(libcamera-detect)
