@@ -1,40 +1,65 @@
 
+#include "jni.h"
 #include <chrono>
 
 #include "core/frame_info.hpp"
 #include "core/libcamera_app.hpp"
 #include "core/options.hpp"
-#include "output/output.hpp"
 #include "image/image.hpp"
+#include "output/output.hpp"
 
 #include "org_libcamera_apps_LibcameraApps.h"
+#include <string>
 
 using namespace std::placeholders;
 
-static LibcameraApp app;
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    init
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_init(JNIEnv *env, jobject libcameraApp)
+{
+	jclass jclassLibcameraApps = env->FindClass("org/libcamera/apps/LibcameraApps");
+	jfieldID jfield_pointer = env->GetFieldID(jclassLibcameraApps, "pointer", "J");
+	LibcameraApp *app = new LibcameraApp();
+	env->SetLongField(libcameraApp, jfield_pointer, (long)app);
+}
+
+LibcameraApp *getLibcameraApp(JNIEnv *env, jobject libcameraApp)
+{
+	jclass jclassLibcameraApps = env->FindClass("org/libcamera/apps/LibcameraApps");
+	jfieldID jfield_pointer = env->GetFieldID(jclassLibcameraApps, "pointer", "J");
+	LibcameraApp *app = (LibcameraApp *)env->GetLongField(libcameraApp, jfield_pointer);
+	return app;
+}
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
  * Method:    setOptions
  * Signature: ([Ljava/lang/String;)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions(JNIEnv * env, jclass jc, jobjectArray elements)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions(JNIEnv *env, jobject jc,
+																			jobjectArray elements)
 {
 	try
 	{
+		LibcameraApp *app = getLibcameraApp(env, jc);
 		jint nOptions = env->GetArrayLength(elements);
-		char **argOptions = new char*[nOptions];
+		char **argOptions = new char *[nOptions];
 		jboolean result;
 		int i;
-		for(i=0;i<nOptions;++i){
-			jstring s = (jstring)env->GetObjectArrayElement( elements,i);
-			argOptions[i]=(char*)env->GetStringUTFChars(s,NULL);
-		}		
-		Options *options = app.GetOptions();
+		for (i = 0; i < nOptions; ++i)
+		{
+			jstring s = (jstring)env->GetObjectArrayElement(elements, i);
+			argOptions[i] = (char *)env->GetStringUTFChars(s, NULL);
+		}
+		Options *options = app->GetOptions();
 		result = options->Parse(nOptions, argOptions);
 		//release
-		for(i=0;i<nOptions;++i){
-			jstring s =  (jstring)env->GetObjectArrayElement(elements,i);
+		for (i = 0; i < nOptions; ++i)
+		{
+			jstring s = (jstring)env->GetObjectArrayElement(elements, i);
 			env->ReleaseStringUTFChars(s, argOptions[i]);
 		}
 		delete[] argOptions;
@@ -52,11 +77,49 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions(JNIE
  * Method:    openCamera
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_openCamera(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_openCamera(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.OpenCamera();
+		getLibcameraApp(env, jc)->OpenCamera();
+		return JNI_TRUE;
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("ERROR: *** " << e.what() << " ***");
+		return JNI_FALSE;
+	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    startCamera
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_startCamera(JNIEnv *env, jobject jc)
+{
+	try
+	{
+		getLibcameraApp(env, jc)->StartCamera();
+		return JNI_TRUE;
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("ERROR: *** " << e.what() << " ***");
+		return JNI_FALSE;
+	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    stopCamera
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_stopCamera(JNIEnv *env, jobject jc)
+{
+	try
+	{
+		getLibcameraApp(env, jc)->StopCamera();
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -71,11 +134,11 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_openCamera(JNIE
  * Method:    closeCamera
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_closeCamera(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_closeCamera(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.CloseCamera();
+		getLibcameraApp(env, jc)->CloseCamera();
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -90,11 +153,11 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_closeCamera(JNI
  * Method:    configureViewfinder
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureViewfinder(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureViewfinder(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.ConfigureViewfinder();
+		getLibcameraApp(env, jc)->ConfigureViewfinder();
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -109,11 +172,11 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureViewfi
  * Method:    configureStill
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.ConfigureStill();
+		getLibcameraApp(env, jc)->ConfigureStill();
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -128,11 +191,49 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill(
  * Method:    configureVideo
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.ConfigureVideo();
+		getLibcameraApp(env, jc)->ConfigureVideo();
+		return JNI_TRUE;
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("ERROR: *** " << e.what() << " ***");
+		return JNI_FALSE;
+	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureStill
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__I
+  (JNIEnv *env, jobject jc, jint flags){
+	try
+	{
+		getLibcameraApp(env, jc)->ConfigureStill(flags);
+		return JNI_TRUE;
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("ERROR: *** " << e.what() << " ***");
+		return JNI_FALSE;
+	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureVideo
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__I
+(JNIEnv *env, jobject jc, jint flags){
+	try
+	{
+		getLibcameraApp(env, jc)->ConfigureVideo(flags);
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -147,11 +248,11 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo(
  * Method:    teardown
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown(JNIEnv *, jclass)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown(JNIEnv *env, jobject jc)
 {
 	try
 	{
-		app.Teardown();
+		getLibcameraApp(env, jc)->Teardown();
 		return JNI_TRUE;
 	}
 	catch (std::exception const &e)
@@ -161,38 +262,71 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown(JNIEnv
 	}
 }
 
-static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,FrameInfo const &frameInfo,JNIEnv * env, jobject jObjectFrame)
+static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, StreamInfo const &info,
+						 FrameInfo const &frameInfo, JNIEnv *env, jobject jObjectFrame)
 {
 	jclass jclassFrame = env->FindClass("org/libcamera/apps/Frame");
-	//class jclassFrameInfo = env->FindClass("org/libcamera/apps/FrameInfo");
+	jclass jclassFrameInfo = env->FindClass("org/libcamera/apps/FrameInfo");
+	jfieldID jfieldFrame_width = env->GetFieldID(jclassFrame, "width", "I");
+	jfieldID jfieldFrame_height = env->GetFieldID(jclassFrame, "height", "I");
+	jfieldID jfieldFrame_stride = env->GetFieldID(jclassFrame, "stride", "I");
+	jfieldID jfieldFrame_pixelFormat = env->GetFieldID(jclassFrame, "pixelFormat", "Ljava/lang/String;");
+	jfieldID jfieldFrame_bufferSize = env->GetFieldID(jclassFrame, "bufferSize", "I");
+	jfieldID jfieldFrame_buffer = env->GetFieldID(jclassFrame, "buffer", "[B");
+	jfieldID jfieldFrame_frameInfo = env->GetFieldID(jclassFrame, "frameInfo", "Lorg/libcamera/apps/FrameInfo;");
+	jmethodID jclassFrameInfo_new = env->GetMethodID(jclassFrameInfo, "<init>", "()V");
+	jfieldID jfieldFrameInfo_frame = env->GetFieldID(jclassFrameInfo, "frame", "I");
+	jfieldID jfieldFrameInfo_fps = env->GetFieldID(jclassFrameInfo, "fps", "F");
+	jfieldID jfieldFrameInfo_exposureTime = env->GetFieldID(jclassFrameInfo, "exposureTime", "F");
+	jfieldID jfieldFrameInfo_analogueGain = env->GetFieldID(jclassFrameInfo, "analogueGain", "F");
+	jfieldID jfieldFrameInfo_digitalGain = env->GetFieldID(jclassFrameInfo, "digitalGain", "F");
+	jfieldID jfieldFrameInfo_redColourGain = env->GetFieldID(jclassFrameInfo, "redColourGain", "F");
+	jfieldID jfieldFrameInfo_blueColourGain = env->GetFieldID(jclassFrameInfo, "blueColourGain", "F");
+	jfieldID jfieldFrameInfo_focus = env->GetFieldID(jclassFrameInfo, "focus", "F");
+	jfieldID jfieldFrameInfo_aelock = env->GetFieldID(jclassFrameInfo, "aelock", "Z");
+	jfieldID jfieldFrameInfo_lensPosition = env->GetFieldID(jclassFrameInfo, "lensPosition", "F");
+	jfieldID jfieldFrameInfo_afState = env->GetFieldID(jclassFrameInfo, "afState", "I");
 
-	jfieldID jfieldFrame_width = env->GetFieldID(jclassFrame,"width","I");
-	jfieldID jfieldFrame_height = env->GetFieldID(jclassFrame,"height","I");
-	jfieldID jfieldFrame_stride = env->GetFieldID(jclassFrame,"stride","I");
-	//jfieldID jfieldFrame_pixelFormat = env->GetFieldID(jclassFrame,"pixelFormat","Ljava/lang/String;");
-	jfieldID jfieldFrame_bufferSize = env->GetFieldID(jclassFrame,"bufferSize","I");
-	jfieldID jfieldFrame_buffer = env->GetFieldID(jclassFrame,"buffer","[B");
-	//jfieldID jfieldFrame_frameInfo = env->GetFieldID(jclassFrame,"frameInfo","Lorg/libcamera/apps/FrameInfo;");
-	
 	if (mem.size() != 1)
 		throw std::runtime_error("incorrect number of planes in YUV420 data");
 
-	
-	LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride="<< info.stride << "\tpixel_format="<< info.pixel_format <<"\tsize="<< mem[0].size() << "\tframeInfo.focus=" << frameInfo.focus);
+	LOG(2, "Save image width=" << info.width << "\theight=" << info.height << "\tstride=" << info.stride
+							   << "\tpixel_format=" << info.pixel_format << "\tsize=" << mem[0].size()
+							   << "\tframeInfo.focus=" << frameInfo.focus);
 	jint size = mem[0].size();
-	env->SetIntField(jObjectFrame,jfieldFrame_width,info.width);
-	env->SetIntField(jObjectFrame,jfieldFrame_height,info.height);
-	env->SetIntField(jObjectFrame,jfieldFrame_stride,info.stride);
-	env->SetIntField(jObjectFrame,jfieldFrame_bufferSize,mem[0].size());
-	jbyteArray jFrame_buffer = (jbyteArray) env->GetObjectField(jObjectFrame,jfieldFrame_buffer);
-	if(jFrame_buffer == NULL)
+
+	env->SetIntField(jObjectFrame, jfieldFrame_width, info.width);
+	env->SetIntField(jObjectFrame, jfieldFrame_height, info.height);
+	env->SetIntField(jObjectFrame, jfieldFrame_stride, info.stride);
+	env->SetIntField(jObjectFrame, jfieldFrame_bufferSize, mem[0].size());
+	env->SetObjectField(jObjectFrame, jfieldFrame_pixelFormat, env->NewStringUTF(info.pixel_format.toString().c_str()));
+	jbyteArray jFrame_buffer = (jbyteArray)env->GetObjectField(jObjectFrame, jfieldFrame_buffer);
+	if (jFrame_buffer == NULL)
 		jFrame_buffer = env->NewByteArray(size);
-	else if (env->GetArrayLength(jFrame_buffer)< size){
+	else if (env->GetArrayLength(jFrame_buffer) < size)
+	{
 		jFrame_buffer = env->NewByteArray(size);
 	}
-	env->SetByteArrayRegion(jFrame_buffer,0,size,(const jbyte*)mem[0].data());
-	env->SetObjectField(jObjectFrame,jfieldFrame_buffer,jFrame_buffer);
+	env->SetByteArrayRegion(jFrame_buffer, 0, size, (const jbyte *)mem[0].data());
+	env->SetObjectField(jObjectFrame, jfieldFrame_buffer, jFrame_buffer);
 
+	jobject frameInfoJava = env->GetObjectField(jObjectFrame, jfieldFrame_frameInfo);
+	if (frameInfoJava == NULL)
+	{
+		frameInfoJava = env->NewObject(jclassFrameInfo, jclassFrameInfo_new);
+		env->SetObjectField(jObjectFrame, jfieldFrame_frameInfo, frameInfoJava);
+	}
+	env->SetIntField(frameInfoJava, jfieldFrameInfo_frame, frameInfo.sequence);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_fps, frameInfo.fps);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_exposureTime, frameInfo.exposure_time);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_analogueGain, frameInfo.analogue_gain);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_digitalGain, frameInfo.digital_gain);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_redColourGain, frameInfo.colour_gains[0]);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_blueColourGain, frameInfo.colour_gains[1]);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_focus, frameInfo.focus);
+	env->SetBooleanField(frameInfoJava, jfieldFrameInfo_aelock, frameInfo.aelock);
+	env->SetFloatField(frameInfoJava, jfieldFrameInfo_lensPosition, frameInfo.lens_position);
+	env->SetIntField(frameInfoJava, jfieldFrameInfo_afState, frameInfo.af_state);
 }
 
 /*
@@ -200,16 +334,17 @@ static void write_buffer(std::vector<libcamera::Span<uint8_t>> const &mem, Strea
  * Method:    retrive
  * Signature: (Lorg/libcamera/apps/Frame;)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive(JNIEnv * env, jclass, jobject jObjectFrame)
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive(JNIEnv *env, jobject jc, jobject jObjectFrame)
 {
 	try
 	{
-		LibcameraApp::Msg msg = app.Wait();
+		LibcameraApp *app = getLibcameraApp(env, jc);
+		LibcameraApp::Msg msg = app->Wait();
 		if (msg.type == LibcameraApp::MsgType::Timeout)
 		{
 			LOG_ERROR("ERROR: Device timeout detected, attempting a restart!!!");
-			app.StopCamera();
-			app.StartCamera();
+			app->StopCamera();
+			app->StartCamera();
 			return JNI_FALSE;
 		}
 		if (msg.type == LibcameraApp::MsgType::Quit)
@@ -217,39 +352,20 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive(JNIEnv 
 		else if (msg.type != LibcameraApp::MsgType::RequestComplete)
 			throw std::runtime_error("unrecognised message!");
 
-// In viewfinder mode, simply run until the timeout, but do a capture if the object
-		// we're looking for is detected.
 		CompletedRequestPtr &completed_request = std::get<CompletedRequestPtr>(msg.payload);
 
 		FrameInfo frame_info(completed_request->metadata);
 		frame_info.fps = completed_request->framerate;
 		frame_info.sequence = completed_request->sequence;
-		if (app.ViewfinderStream())
+		libcamera::Stream *stream = app->GetMainStream();
+		if (stream)
 		{
-			StreamInfo info;
-			libcamera::Stream *stream = app.ViewfinderStream(&info);
-			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
+			StreamInfo info = app->GetStreamInfo(stream);
+			const std::vector<libcamera::Span<uint8_t>> mem = app->Mmap(completed_request->buffers[stream]);
 			write_buffer(mem, info, frame_info, env, jObjectFrame);
-			app.ShowPreview(completed_request, stream);
+			return JNI_TRUE;
 		}
-		// In still capture mode, save a jpeg and go back to preview.
-		else if (app.VideoStream())
-		{
-			StreamInfo info;
-			libcamera::Stream *stream = app.VideoStream(&info);
-			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-			write_buffer(mem, info, frame_info, env, jObjectFrame);
-			
-		}else if (app.StillStream())
-		{
-			StreamInfo info;
-			libcamera::Stream *stream = app.StillStream(&info);
-			const std::vector<libcamera::Span<uint8_t>> mem = app.Mmap(completed_request->buffers[stream]);
-			write_buffer(mem, info, frame_info,env, jObjectFrame);
-			
-		}
-		
-		return JNI_TRUE;
+		return JNI_FALSE;
 	}
 	catch (std::exception const &e)
 	{

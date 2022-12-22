@@ -9,11 +9,19 @@ extern "C" {
 #endif
 /*
  * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    init
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_init
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
  * Method:    setOptions
  * Signature: ([Ljava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions
-  (JNIEnv *, jclass, jobjectArray);
+  (JNIEnv *, jobject, jobjectArray);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -21,7 +29,23 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_openCamera
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    startCamera
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_startCamera
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    stopCamera
+ * Signature: ()Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_stopCamera
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -29,7 +53,7 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_openCamera
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_closeCamera
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -37,23 +61,39 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_closeCamera
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureViewfinder
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
  * Method:    configureStill
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill
-  (JNIEnv *, jclass);
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
  * Method:    configureVideo
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo
-  (JNIEnv *, jclass);
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureStill
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__I
+  (JNIEnv *, jobject, jint);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureVideo
+ * Signature: (I)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__I
+  (JNIEnv *, jobject, jint);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -61,7 +101,7 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo
  * Signature: ()Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown
-  (JNIEnv *, jclass);
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -69,7 +109,7 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown
  * Signature: (Lorg/libcamera/apps/Frame;)Z
  */
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive
-  (JNIEnv *, jclass, jobject);
+  (JNIEnv *, jobject, jobject);
 
 #ifdef __cplusplus
 }

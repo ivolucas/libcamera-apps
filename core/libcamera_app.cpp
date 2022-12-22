@@ -373,11 +373,15 @@ void LibcameraApp::ConfigureVideo(unsigned int flags)
 	int lores_index = 1;
 	if (have_raw_stream)
 	{
+		LOG(2, "Video setup add RAW");
 		stream_roles.push_back(StreamRole::Raw);
 		lores_index = 2;
 	}
-	if (have_lores_stream)
+	if (have_lores_stream){
+		LOG(2, "Video setup add Viewfinder");
 		stream_roles.push_back(StreamRole::Viewfinder);
+	}
+		
 	configuration_ = camera_->generateConfiguration(stream_roles);
 	if (!configuration_)
 		throw std::runtime_error("failed to generate video configuration");

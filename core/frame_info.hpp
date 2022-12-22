@@ -15,7 +15,7 @@
 struct FrameInfo
 {
 	FrameInfo(libcamera::ControlList &ctrls)
-		: exposure_time(0.0), digital_gain(0.0), colour_gains({ { 0.0f, 0.0f } }), focus(0.0), aelock(false),
+		: exposure_time(0.0), analogue_gain(0.0), digital_gain(0.0), colour_gains({ { 0.0f, 0.0f } }), focus(0.0), aelock(false),
 		  lens_position(-1.0), af_state(0)
 	{
 		auto exp = ctrls.get(libcamera::controls::ExposureTime);
