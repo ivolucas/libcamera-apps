@@ -111,6 +111,62 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_teardown
 JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive
   (JNIEnv *, jobject, jobject);
 
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureCustomVideo
+ * Signature: (III)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureCustomVideo
+  (JNIEnv *, jobject, jint, jint, jint);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    setRoi
+ * Signature: (FFFF)V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_setRoi
+  (JNIEnv *, jobject, jfloat, jfloat, jfloat, jfloat);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    resetRoi
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_resetRoi
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusManual
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusManual
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusAuto
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusAuto
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusContinuesAuto
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusContinuesAuto
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    triggerFocus
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_triggerFocus
+  (JNIEnv *, jobject);
+
 #ifdef __cplusplus
 }
 #endif

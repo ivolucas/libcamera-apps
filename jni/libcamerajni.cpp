@@ -1,5 +1,6 @@
 
 #include "jni.h"
+#include "libcamera/control_ids.h"
 #include <chrono>
 
 #include "core/frame_info.hpp"
@@ -12,6 +13,30 @@
 #include <string>
 
 using namespace std::placeholders;
+/*
+class LibcameraJni : public LibcameraApp
+{
+public:	
+	void ConfigureCustomVideo(int width, int height, int bufferCount){
+		LOG(2, "Configuring custom video...");
+		GetOptions()->nopreview = true;
+		GetOptions()->width=width;
+		GetOptions()->height=height;
+		GetOptions()->buffer_count=bufferCount;
+		ConfigureVideo();
+	}
+
+		void SetRoi(int width, int height, int bufferCount){
+		LOG(2, "Configuring custom video...");
+		GetOptions()->nopreview = true;
+		GetOptions()->width=width;
+		GetOptions()->height=height;
+		GetOptions()->buffer_count=bufferCount;
+		ConfigureVideo();
+	}
+
+};
+*/
 
 /*
  * Class:     org_libcamera_apps_LibcameraApps
@@ -23,6 +48,8 @@ JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_init(JNIEnv *env, j
 	jclass jclassLibcameraApps = env->FindClass("org/libcamera/apps/LibcameraApps");
 	jfieldID jfield_pointer = env->GetFieldID(jclassLibcameraApps, "pointer", "J");
 	LibcameraApp *app = new LibcameraApp();
+	//force no preview
+	app->GetOptions()->nopreview = true;
 	env->SetLongField(libcameraApp, jfield_pointer, (long)app);
 }
 
@@ -56,6 +83,8 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_setOptions(JNIE
 		}
 		Options *options = app->GetOptions();
 		result = options->Parse(nOptions, argOptions);
+		//force no preview
+		options->nopreview = true;
 		//release
 		for (i = 0; i < nOptions; ++i)
 		{
@@ -210,8 +239,8 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo_
  * Method:    configureStill
  * Signature: (I)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__I
-  (JNIEnv *env, jobject jc, jint flags){
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill__I(JNIEnv *env, jobject jc, jint flags)
+{
 	try
 	{
 		getLibcameraApp(env, jc)->ConfigureStill(flags);
@@ -229,8 +258,8 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureStill_
  * Method:    configureVideo
  * Signature: (I)Z
  */
-JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__I
-(JNIEnv *env, jobject jc, jint flags){
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureVideo__I(JNIEnv *env, jobject jc, jint flags)
+{
 	try
 	{
 		getLibcameraApp(env, jc)->ConfigureVideo(flags);
@@ -372,4 +401,112 @@ JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_retrive(JNIEnv 
 		LOG_ERROR("ERROR: *** " << e.what() << " ***");
 		return JNI_FALSE;
 	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    configureCustomVideo
+ * Signature: (III)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_libcamera_apps_LibcameraApps_configureCustomVideo(JNIEnv *env, jobject jc,
+																					  jint width, jint height,
+																					  jint bufferCount)
+{
+	try
+	{
+		LibcameraApp *app = getLibcameraApp(env, jc);
+		Options *options = app->GetOptions();
+		options->nopreview = true;
+		options->width = width;
+		options->height = height;
+		options->buffer_count = bufferCount;
+		app->ConfigureVideo();
+		return JNI_TRUE;
+	}
+	catch (std::exception const &e)
+	{
+		LOG_ERROR("ERROR: *** " << e.what() << " ***");
+		return JNI_FALSE;
+	}
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    setRoi
+ * Signature: (FFFF)V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_setRoi(JNIEnv *env, jobject jc, jfloat roi_x, jfloat roi_y,
+																	jfloat roi_width, jfloat roi_height)
+{
+	Options *options = getLibcameraApp(env, jc)->GetOptions();
+	options->roi_x = roi_x;
+	options->roi_y = roi_y;
+	options->roi_width = roi_width;
+	options->roi_height = roi_height;
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    resetRoi
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_resetRoi(JNIEnv *env, jobject jc)
+{
+	Options *options = getLibcameraApp(env, jc)->GetOptions();
+	options->roi_x = 0.0;
+	options->roi_y = 0.0;
+	options->roi_width = 0.0;
+	options->roi_height = 0.0;
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusManual
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusManual(JNIEnv *env, jobject jc)
+{
+	LOG(1, "Manul Focus");
+	libcamera::ControlList controls;
+	controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeManual);
+	getLibcameraApp(env, jc)->SetControls(controls);
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusAuto
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusAuto(JNIEnv *env, jobject jc)
+{
+	LOG(1, "Auto Focus");
+	libcamera::ControlList controls;
+	controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeAuto);
+	getLibcameraApp(env, jc)->SetControls(controls);
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    focusContinuesAuto
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_focusContinuesAuto(JNIEnv *env, jobject jc)
+{
+	LOG(1, "Continuous Focus");
+	libcamera::ControlList controls;
+	controls.set(libcamera::controls::AfMode, libcamera::controls::AfModeContinuous);
+	getLibcameraApp(env, jc)->SetControls(controls);
+}
+
+/*
+ * Class:     org_libcamera_apps_LibcameraApps
+ * Method:    triggerFocus
+ * Signature: ()Z
+ */
+JNIEXPORT void JNICALL Java_org_libcamera_apps_LibcameraApps_triggerFocus(JNIEnv *env, jobject jc)
+{
+	LOG(1, "Trigger Focus");
+	libcamera::ControlList controls;
+	controls.set(libcamera::controls::AfTrigger, libcamera::controls::AfTriggerStart);
+	getLibcameraApp(env, jc)->SetControls(controls);
 }
